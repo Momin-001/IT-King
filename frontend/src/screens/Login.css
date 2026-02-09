@@ -1,0 +1,7 @@
+.bg-login-image {
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7)),
+    url("https://i.pinimg.com/474x/94/68/55/946855e6dc042bdefaa550fb459124d6.jpg");
+  background-size: cover;
+  background-position: center;
+}

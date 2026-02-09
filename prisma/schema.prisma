@@ -1,0 +1,116 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model UnverifiedUser {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  link      String
+  expiresIn DateTime
+}
+
+model User {
+  id       Int     @id @default(autoincrement())
+  name     String
+  email    String  @unique
+  password String
+  isAdmin  Boolean @default(false)
+  isActive Boolean @default(true)
+
+  ledTeam        Team?           @relation("TeamLead") // a User can be TeamLead of a Team
+  teams          Team[]          @relation("TeamMembers") // a User belongs to many Teams
+  tasks          Task[]          @relation(name: "AssignedTasks") // a User may have many tasks
+  messages       Message[] // a User may have many messages
+  userChatStates UserChatState[] // bcz a User will have many chats, it will have many chatStates
+}
+
+model Team {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String
+  users       User[]    @relation("TeamMembers") // Team may have many members(Users)
+  projects    Project[] @relation("AssignedProjects") // Team may have many Projects
+
+  teamLeadId Int  @unique // UNIQUE. Bcz one User can only be TeamLead of only one Team at a time
+  TeamLead   User @relation("TeamLead", fields: [teamLeadId], references: [id])
+
+  chat Chat? // Bcz a Team will have only 1 Chat
+}
+
+model Project {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String
+  startDate   DateTime @default(now())
+  dueDate     DateTime @default(now())
+  isComplete  Boolean  @default(false)
+  tasks       Task[] // a Project may have many tasks
+
+  teams Team[] @relation("AssignedProjects")
+}
+
+model Task {
+  id        Int     @id @default(autoincrement())
+  title     String
+  completed Boolean
+
+  projectId Int // a Task belongs to one Project only
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    Int // a Task belongs to one User only
+  user      User    @relation(name: "AssignedTasks", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Chat {
+  id Int @id @default(autoincrement())
+
+  teamId Int  @unique // a Chat belongs to 1 Team, and a Team can have only 1 Chat
+  team   Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  messageId   Int? // a UserChatState row will have one Message(lastMessage). Optional, because a newly created chat does not have any messages
+  lastMessage Message? @relation(name: "LastMessage", fields: [messageId], references: [id])
+
+  messages       Message[]       @relation(name: "ChatMessage") // a Chat may have many Messages
+  userChatStates UserChatState[] // a Chat may have many UserChatStates, bcz of many Users
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  content   String
+  isDeleted Boolean  @default(false) // will be used for soft deletion
+  createdAt DateTime @default(now())
+
+  chatId Int // a Message will only belong to one Chat
+  chat   Chat @relation(name: "ChatMessage", fields: [chatId], references: [id], onDelete: Cascade)
+
+  userId Int // a Message will only belong to one User
+  sender User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  isLastMessageFor Chat[]          @relation("LastMessage") // Bcz a single message can be used as `lastMessage` of multiple users the `UserChatState`
+  isLastReadBy     UserChatState[] @relation("LastRead")
+}
+
+model UserChatState {
+  id       Int      @id @default(autoincrement())
+  joinedAt DateTime @default(now())
+
+  lastReadId      Int?
+  lastReadMessage Message? @relation(name: "LastRead", fields: [lastReadId], references: [id])
+
+  chatId Int // a UserChatState row will have one Chat
+  chat   Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  userId Int // a UserChatState row will have one User
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, chatId]) //Bcz 1 UserChatState row will only contain 1 row for every chat of every user
+}
