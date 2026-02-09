@@ -10,25 +10,32 @@ Follow the steps below to install dependencies and start the development servers
 npm i
 ```
 
-### 2. Run backend
+### 2. Change DB connection string
+
+```
+open .env file
+Change DATABASE_URL to match your local DB
+```
+
+### 3. Run backend
 
 ```bash
 npm run dev
 ```
 
-### 3. Navigate to Frontend
+### 4. Navigate to Frontend
 
 ```bash
 cd frontend
 ```
 
-### 4. Install Frontend dependencies
+### 5. Install Frontend dependencies
 
 ```bash
 npm i
 ```
 
-### 5. Run Frontend
+### 6. Run Frontend
 
 ```bash
 npm run dev
